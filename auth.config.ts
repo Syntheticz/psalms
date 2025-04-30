@@ -3,7 +3,8 @@ import type { NextAuthConfig } from "next-auth";
 
 export default {
   pages: {
-    signIn: "/",
+    signIn: "/auth/login",
+    newUser: "/new/user",
   },
   providers: [],
 } satisfies NextAuthConfig;

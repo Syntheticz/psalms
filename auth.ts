@@ -3,11 +3,10 @@ import { PrismaAdapter } from "@auth/prisma-adapter";
 import { prisma } from "@/lib/prisma";
 
 import authConfig from "./auth.config";
-import { Adapter } from "next-auth/adapters";
+// import { Adapter } from "next-auth/adapters";
 
 import CredentialsProvider from "next-auth/providers/credentials";
 import bcrypt from "bcryptjs";
-import { getToken } from "next-auth/jwt";
 
 export async function fetchUserRole(id: string) {
   const user = await prisma.user.findFirst({
@@ -17,9 +16,8 @@ export async function fetchUserRole(id: string) {
     select: {
       id: true,
       email: true,
-      firstname: true,
-      lastname: true,
       role: true,
+      userInfoId: true,
     },
   });
 
@@ -46,10 +44,11 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           type: "text",
           placeholder: "email",
         },
+        password: { label: "Password", type: "password" },
       },
 
       async authorize(credentials) {
-        if (!credentials || !credentials.email) {
+        if (!credentials || !credentials.email || !credentials.password) {
           return null;
         }
 
@@ -59,12 +58,21 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           });
 
           if (dbUser) {
-            return {
-              role: "",
-              id: dbUser.id,
-              name: dbUser.email,
-              permissions: [],
-            };
+            const passwordMatch = await bcrypt.compare(
+              credentials.password as string,
+              dbUser.password
+            );
+
+            if (!passwordMatch) return null;
+            else {
+              return {
+                role: "",
+                id: dbUser.id,
+                name: dbUser.name || "",
+                email: dbUser.email || "",
+                isNewUser: dbUser.userInfoId ? false : true,
+              };
+            }
           }
           return null;
         } catch (err) {
@@ -87,26 +95,37 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       // Logged in users are authenticated, otherwise redirect to login page
       return !!auth;
     },
-    jwt: async ({ token, user }) => {
+    jwt: async ({ token, user, trigger, session }) => {
+      if (trigger === "update") {
+        token.isNewUser = session.isNewUser;
+
+        console.log(session.isNewUser);
+        return token;
+      }
+
       if (user) {
         const id = user.id as string;
         const dbUser = await fetchUserRole(id);
 
         if (dbUser) {
-          token.name = dbUser.user.firstname + " " + dbUser.user.lastname || "";
           token.role = dbUser.user.role || "";
           token.id = dbUser.user.id || "";
+          (token.email = dbUser.user.email || ""),
+            (token.isNewUser = dbUser.user.userInfoId ? false : true);
         }
 
         return token;
       }
+
       return token;
     },
     session: async ({ session, token }) => {
       if (session.user) {
         session.user.name = token.name;
-        session.user.role = token.role as string;
-        session.user.id = token.id as string;
+        session.user.role = token.role;
+        session.user.id = token.id;
+        session.user.isNewUser = token.isNewUser;
+        session.user.email = token.email;
       }
       return session;
     },
