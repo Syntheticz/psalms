@@ -288,7 +288,8 @@ model SavedJobs {
   id   String @id @default(uuid())
   user User   @relation(fields: [userId], references: [id])
   job  Job    @relation(fields: [jobId], references: [id])
-
   userId String
   jobId  String
+
+  createdAt DateTime @default(now())
 }
