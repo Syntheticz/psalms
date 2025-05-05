@@ -19,24 +19,25 @@ enum ROLE {
 }
 
 model User {
-  id            String        @id @default(uuid())
+  id            String    @id @default(uuid())
   name          String?
-  email         String?       @unique
+  email         String?   @unique
   password      String?
   emailVerified DateTime?
   image         String?
-  createdAt     DateTime      @default(now())
-  updatedAt     DateTime      @updatedAt
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
   role          ROLE
   accounts      Account[]
   sessions      Session[]
-  Job           Job?          @relation(fields: [jobId], references: [id])
-  jobId         String?
-  UserInfo      UserInfo?
-  userInfoId    String?
-  AppliedJobs   AppliedJobs[]
-  SavedJobs     SavedJobs[]
-  Company       Company[]
+
+  UserInfo    UserInfo?
+  userInfoId  String?
+  AppliedJobs AppliedJobs[]
+  SavedJobs   SavedJobs[]
+  Company     Company[]
+  JobScore    JobScore[]
+  Job         Job[]
 }
 
 model UserInfo {
@@ -196,13 +197,19 @@ model Job {
   job_title           String
   industry_field      String
   priority_categories String[]
-  employer            User[]
-  qualifications      Qualification[]
+  isActive            Boolean  @default(true)
 
-  createdAt   DateTime      @default(now())
-  updatedAt   DateTime      @updatedAt
-  AppliedJobs AppliedJobs[]
-  SavedJobs   SavedJobs[]
+  employer User   @relation(fields: [userId], references: [id])
+  userId   String
+
+  qualifications Qualification[]
+
+  createdAt  DateTime      @default(now())
+  updatedAt  DateTime      @updatedAt
+  applicants AppliedJobs[]
+  SavedJobs  SavedJobs[]
+  JobScore   JobScore[]
+  metrics    metrics?
 }
 
 model Qualification {
@@ -213,6 +220,16 @@ model Qualification {
   priority             Boolean
   job                  Job      @relation(fields: [jobId], references: [id])
   jobId                String
+}
+
+model JobScore {
+  id          String        @id @default(uuid())
+  score       Int
+  job         Job           @relation(fields: [jobId], references: [id])
+  jobId       String
+  user        User          @relation(fields: [userId], references: [id])
+  userId      String
+  AppliedJobs AppliedJobs[]
 }
 
 model Company {
@@ -229,7 +246,7 @@ model Company {
   description String?
   benefits    Benefit[] // Relation to Benefit model
 
-  socialMedia       SocialMedia[] // Relation to SocialMedia model
+  socialMedia       SocialMedia   @relation(fields: [socialMediaId], references: [id]) // Relation to SocialMedia model
   profileCompletion Int           @default(0)
   contactPerson     ContactPerson @relation(fields: [contactPersonId], references: [id])
   contactPersonId   String
@@ -237,8 +254,9 @@ model Company {
   user   User   @relation(fields: [userId], references: [id])
   userId String
 
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  socialMediaId String
 }
 
 model ContactPerson {
@@ -263,11 +281,11 @@ model SocialMedia {
   linkedin String?
   twitter  String?
   facebook String?
-  company  Company? @relation(fields: [companyId], references: [id])
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-  companyId String?
+
+  Company Company[]
 }
 
 enum APPLICATIONSTATUS {
@@ -285,6 +303,9 @@ model AppliedJobs {
   userId String
   jobId  String
 
+  jobScore   JobScore? @relation(fields: [jobScoreId], references: [id])
+  jobScoreId String?
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
@@ -297,4 +318,14 @@ model SavedJobs {
   jobId  String
 
   createdAt DateTime @default(now())
+}
+
+model metrics {
+  id           String @id @default(uuid())
+  job          Job    @relation(fields: [jobId], references: [id])
+  jobId        String @unique
+  views        Int    @default(0)
+  applications Int    @default(0)
+  saved        Int    @default(0)
+  qualified    Int    @default(0)
 }

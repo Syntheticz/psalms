@@ -130,7 +130,7 @@ export default function LandingPage() {
                   if (role === "APPLICANT") {
                     router.push("/applicant/dashboard");
                   } else {
-                    router.push("/employer/dashbard");
+                    router.push("/employer/dashboard");
                   }
                 }}
               >

@@ -26,6 +26,7 @@ import {
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import Link from "next/link";
 import { ScrollArea } from "../ui/scroll-area";
+import { signOut } from "next-auth/react";
 
 export default function EmployerLayout({
   children,
@@ -208,11 +209,9 @@ export default function EmployerLayout({
                     </Link>
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem>
-                    <Link href="/auth/login" className="flex w-full">
-                      <LogOut className="mr-2 h-4 w-4" />
-                      Log out
-                    </Link>
+                  <DropdownMenuItem onClick={() => signOut()}>
+                    <LogOut className="mr-2 h-4 w-4" />
+                    Log out
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>

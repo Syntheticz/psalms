@@ -5,6 +5,7 @@ import bcrypt from "bcryptjs";
 import { userProfileSchema } from "../validation/user-profile-schema";
 import { z } from "zod";
 import { auth } from "@/auth";
+import { CompanyFormData } from "@/components/company-form";
 type UserProfileFormValues = z.infer<typeof userProfileSchema>;
 
 const HASH_VALUE = 10 as const;
@@ -176,4 +177,133 @@ export async function saveApplicantInformation(data: UserProfileFormValues) {
       },
     },
   });
+}
+
+export async function saveEmployerProfile(data: CompanyFormData) {
+  const session = await auth();
+
+  const userData = await prisma.user.findFirst({
+    where: { email: session?.user.email },
+  });
+
+  if (!userData) {
+    throw new Error("User does not exist!");
+  }
+  const {
+    contactPersonId,
+    createdAt,
+    description,
+    email,
+    founded,
+    id,
+    industry,
+    location,
+    logo,
+    name,
+    phone,
+    profileCompletion,
+    size,
+    contactPerson,
+    updatedAt,
+    website,
+    benefits,
+    socialMedia,
+  } = data;
+
+  await prisma.$transaction(async (tx) => {
+    const socialMediaInfo = await tx.socialMedia.upsert({
+      where: {
+        id: socialMedia?.id || "",
+      },
+      create: {
+        facebook: socialMedia?.facebook,
+        linkedin: socialMedia?.linkedin,
+        twitter: socialMedia?.twitter,
+      },
+      update: {
+        facebook: socialMedia?.facebook,
+        linkedin: socialMedia?.linkedin,
+        twitter: socialMedia?.twitter,
+      },
+    });
+
+    const contactPersonInfo = await tx.contactPerson.upsert({
+      where: {
+        id: contactPerson.id,
+      },
+      create: {
+        email: contactPerson.email,
+        name: contactPerson.name,
+        contactNumber: contactPerson.contactNumber,
+      },
+      update: {
+        email: contactPerson.email,
+        name: contactPerson.name,
+        contactNumber: contactPerson.contactNumber,
+      },
+    });
+
+    await tx.company.upsert({
+      where: { id },
+      create: {
+        name,
+        description,
+        email,
+        founded,
+        industry,
+        location,
+        logo,
+        phone,
+        size,
+        website,
+        userId: userData.id,
+        contactPersonId: contactPersonInfo.id,
+        socialMediaId: socialMediaInfo.id,
+        benefits: {
+          createMany: {
+            data:
+              benefits?.map((item) => ({ content: item.content || "" })) || [],
+          },
+        },
+      },
+      update: {
+        name,
+        description,
+        email,
+        founded,
+        industry,
+        location,
+        logo,
+        phone,
+        size,
+        website,
+        benefits: {
+          deleteMany: {},
+          createMany: {
+            data:
+              benefits?.map((item) => ({ content: item.content || "" })) || [],
+          },
+        },
+      },
+    });
+  });
+}
+
+export async function fetchUserCompany() {
+  const session = await auth();
+  if (!session) throw new Error("User is unauthorized");
+
+  const user = await prisma.user.findFirst({
+    where: {
+      email: session.user.email,
+    },
+    include: {
+      Company: {
+        include: { benefits: true, contactPerson: true, socialMedia: true },
+      },
+    },
+  });
+
+  if (!user) throw new Error("User is not found");
+  return user.Company[0];
 }

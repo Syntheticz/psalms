@@ -18,6 +18,7 @@ export async function fetchUserRole(id: string) {
       email: true,
       role: true,
       userInfoId: true,
+      Company: true,
     },
   });
 
@@ -60,7 +61,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           if (dbUser) {
             const passwordMatch = await bcrypt.compare(
               credentials.password as string,
-              dbUser.password
+              dbUser.password || ""
             );
 
             if (!passwordMatch) return null;
@@ -104,7 +105,14 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           token.role = dbUser.user.role || "";
           token.id = dbUser.user.id || "";
           (token.email = dbUser.user.email || ""),
-            (token.isNewUser = dbUser.user.userInfoId ? false : true);
+            (token.isNewUser =
+              dbUser.user.role === "APPLICANT"
+                ? dbUser.user.userInfoId
+                  ? false
+                  : true
+                : dbUser.user.Company.length !== 0
+                ? false
+                : true);
         }
 
         return token;
