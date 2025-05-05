@@ -51,7 +51,7 @@ export function UserProfileForm() {
   const [currentStep, setCurrentStep] = useState(0);
   const formRef = useRef<HTMLDivElement>(null);
   const scopeRef = useRef<ReturnType<typeof createScope> | null>(null);
-  const session = useSession();
+  const { data: session, update } = useSession();
   const router = useRouter();
 
   const methods = useForm<UserProfileFormValues>({
@@ -108,13 +108,17 @@ export function UserProfileForm() {
     });
   }, [currentStep]);
 
+  console.log(session);
+
   const onSubmit = async (data: UserProfileFormValues) => {
     try {
-      session.data?.user;
+      session?.user;
       await saveApplicantInformation(data);
-      session.update({ isNewUser: false });
+      await update({ isNewUser: false });
       toast.success("Profile Updated!");
-      router.push("/applicant/dashboard");
+      await update();
+
+      window.location.reload();
     } catch (error) {
       toast.error(
         error instanceof Error ? error.message : "There was a problem!"

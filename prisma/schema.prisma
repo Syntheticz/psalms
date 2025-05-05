@@ -22,7 +22,7 @@ model User {
   id            String        @id @default(uuid())
   name          String?
   email         String?       @unique
-  password      String
+  password      String?
   emailVerified DateTime?
   image         String?
   createdAt     DateTime      @default(now())
@@ -36,6 +36,7 @@ model User {
   userInfoId    String?
   AppliedJobs   AppliedJobs[]
   SavedJobs     SavedJobs[]
+  Company       Company[]
 }
 
 model UserInfo {
@@ -215,22 +216,26 @@ model Qualification {
 }
 
 model Company {
-  id                String        @id @default(uuid())
-  name              String
-  logo              String?
-  industry          String?
-  size              String?
-  founded           Int?
-  website           String?
-  location          String?
-  email             String?
-  phone             String?
-  description       String?
-  benefits          Benefit[] // Relation to Benefit model
+  id          String    @id @default(uuid())
+  name        String
+  logo        String?
+  industry    String?
+  size        String?
+  founded     Int?
+  website     String?
+  location    String?
+  email       String?
+  phone       String?
+  description String?
+  benefits    Benefit[] // Relation to Benefit model
+
   socialMedia       SocialMedia[] // Relation to SocialMedia model
   profileCompletion Int           @default(0)
   contactPerson     ContactPerson @relation(fields: [contactPersonId], references: [id])
   contactPersonId   String
+
+  user   User   @relation(fields: [userId], references: [id])
+  userId String
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -285,9 +290,9 @@ model AppliedJobs {
 }
 
 model SavedJobs {
-  id   String @id @default(uuid())
-  user User   @relation(fields: [userId], references: [id])
-  job  Job    @relation(fields: [jobId], references: [id])
+  id     String @id @default(uuid())
+  user   User   @relation(fields: [userId], references: [id])
+  job    Job    @relation(fields: [jobId], references: [id])
   userId String
   jobId  String
 

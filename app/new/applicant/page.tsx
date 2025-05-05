@@ -3,8 +3,6 @@
 import { useState } from "react";
 import { WelcomeScreen } from "@/components/welcome-screen";
 import { UserProfileForm } from "@/components/user-profile-form";
-import { useSession } from "next-auth/react";
-import { Button } from "@/components/ui/button";
 
 export default function Home() {
   const [showForm, setShowForm] = useState(false);
