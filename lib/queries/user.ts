@@ -323,21 +323,29 @@ export async function fetchUserCompany() {
 }
 
 export async function fetchUserInfo(id: string) {
-  return prisma.userInfo.findFirst({
+  const data = await prisma.user.findFirst({
     where: {
       id,
     },
     include: {
-      certificates: true,
-      education: true,
-      experience: true,
-      hardSkills: true,
-      skills: true,
-      softSkills: true,
-      technicalSkills: true,
-      resume: true,
+      UserInfo: {
+        include: {
+          certificates: true,
+          education: true,
+          experience: true,
+          hardSkills: true,
+          skills: true,
+          softSkills: true,
+          technicalSkills: true,
+          resume: true,
+        },
+      },
     },
   });
+
+  console.log(data);
+
+  return data?.UserInfo;
 }
 
 export async function updateVerification() {

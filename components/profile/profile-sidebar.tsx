@@ -17,6 +17,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { UserInfo } from "@prisma/client";
 import { useQuery } from "@tanstack/react-query";
 import { fetchUserInfo } from "@/lib/queries/user";
+import { useSession } from "next-auth/react";
 
 interface ProfileSidebarProps {
   user: UserInfo;
@@ -24,12 +25,15 @@ interface ProfileSidebarProps {
 }
 
 export function ProfileSidebar({ user, isEditing }: ProfileSidebarProps) {
+  const session = useSession();
   const { data: document, isLoading: isLoadingDocuments } = useQuery({
-    queryKey: ["document", user.id],
+    queryKey: ["document", session.data?.user.id || ""],
     queryFn: async () => {
-      const record = await fetchUserInfo(user.id);
+      const record = await fetchUserInfo(session.data?.user.id || "");
+
       return record?.resume;
     },
+    enabled: !!session.data?.user.id,
   });
 
   return (
@@ -115,7 +119,9 @@ export function ProfileSidebar({ user, isEditing }: ProfileSidebarProps) {
                   <File className="h-5 w-5 text-primary" />
                 </div>
                 <div>
-                  <p className="font-medium">{document.name}</p>
+                  <p className="font-medium truncate text-ellipsis overflow-hidden w-36">
+                    {document.name}
+                  </p>
                   <p className="text-xs text-muted-foreground">
                     Uploaded on{" "}
                     {new Date(document.createdAt).toLocaleDateString()}
@@ -131,11 +137,6 @@ export function ProfileSidebar({ user, isEditing }: ProfileSidebarProps) {
               No documents uploaded yet
             </p>
           )}
-
-          <Button variant="outline" className="w-full">
-            <Upload className="mr-2 h-4 w-4" />
-            Upload Document
-          </Button>
         </CardContent>
       </Card>
     </>

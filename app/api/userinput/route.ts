@@ -53,7 +53,7 @@ export async function GET(req: NextRequest) {
     });
   } catch (error) {
     console.log(error);
-    return NextResponse.json({
+    return Response.json({
       job: null,
       success: false,
     });

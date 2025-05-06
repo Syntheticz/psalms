@@ -59,6 +59,8 @@ export function ApplicantProfile() {
     return <ProfileSkeleton />;
   }
 
+  console.log(userData);
+
   if (error || !userData) {
     return (
       <div className="p-8 text-center">

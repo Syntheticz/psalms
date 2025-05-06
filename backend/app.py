@@ -224,50 +224,51 @@ def evaluate_category(qualifications, applicant_values):
 # Function to evaluate a specific job by its ID
 def evaluate_job_by_id(job, applicant_data):
     evaluated_scores = []
-    global SKILLS
-    global EDUCATION
-    global CERTIFICATES
-    global EXPERIENCE
+    global SKILLS, EDUCATION, CERTIFICATES, EXPERIENCE
 
-    qualifications = job["qualifications"]
+    qualifications = job.get("qualifications", [])
     category_scores = {}
 
-
-    job_categories = {qual["categories"][0].lower() for qual in qualifications}
+    # Safely extract categories from job qualifications
+    job_categories = {
+        qual["categories"][0].lower()
+        for qual in qualifications
+        if qual.get("categories") and isinstance(qual["categories"], list)
+    }
     applicant_categories = {key.lower() for key in applicant_data.keys()}
     all_categories = job_categories.union(applicant_categories)
 
     for category in all_categories:
-        # Filter qualifications by category (case-insensitive match)
+        # Get qualifications and applicant values for this category
         category_qualifications = [
-            qual for qual in qualifications if qual["categories"][0].lower() == category
+            qual for qual in qualifications
+            if qual.get("categories") and qual["categories"][0].lower() == category
         ]
         applicant_values = applicant_data.get(category, [])
 
+        # Normalize to empty list if None
+        if applicant_values is None:
+            applicant_values = []
+
         if category_qualifications and applicant_values:
-            # Evaluate category if both job and applicant have data
             score, best_qualification, best_match, matched_applicant_value = evaluate_category(
                 category_qualifications, applicant_values
             )
-        elif applicant_values and not category_qualifications :
+        elif applicant_values and not category_qualifications:
             score = 10
+            best_qualification = best_match = matched_applicant_value = None
         else:
-            # Assign score of 0 if category data is missing
             score, best_qualification, best_match, matched_applicant_value = 0.0, None, None, None
 
         category_scores[category] = score
 
-        
-        score = score * 10
+        score *= 10
         if score > 8.5:
             score = 10
 
-        
         evaluated_scores.append({category.capitalize(): round(score, 1)})
 
-
-    
-    # Extract values from the list of dictionaries
+    # Extract specific scores
     for item in evaluated_scores:
         if 'Skills' in item:
             SKILLS = item['Skills']
@@ -389,7 +390,7 @@ def make_predict():
             if category in prior_category:
                 prior_category[category] = True
 
-
+        print(applicant_data)
         evaluate_job_by_id(job, applicant_data)
 
   

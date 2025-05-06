@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { FieldErrors, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -30,6 +30,17 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { createNewJobPosting } from "@/lib/queries/jobs";
+import { useQuery } from "@tanstack/react-query";
+import { fetchUserCompany } from "@/lib/queries/user";
+
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { useRouter } from "next/navigation";
 
 const formSchema = z.object({
   company_name: z.string().min(2, {
@@ -67,13 +78,24 @@ const formSchema = z.object({
     .min(1, {
       message: "Please add at least one qualification.",
     }),
+  salaryRange: z.string({
+    required_error: "Please select a salary range.",
+  }),
+  customMinSalary: z.string().optional(),
+  customMaxSalary: z.string().optional(),
 });
 
 export type JobPostingFormValues = z.infer<typeof formSchema>;
 
 export default function PostJobPage() {
   const [step, setStep] = useState(1);
+  const router = useRouter();
   const totalSteps = 3;
+
+  const { data: company } = useQuery({
+    queryKey: ["company_name"],
+    queryFn: async () => await fetchUserCompany(),
+  });
 
   const form = useForm<JobPostingFormValues>({
     resolver: zodResolver(formSchema),
@@ -93,8 +115,16 @@ export default function PostJobPage() {
           priority: false,
         },
       ],
+      salaryRange: "",
     },
   });
+
+  useEffect(() => {
+    if (!company) return;
+
+    form.setValue("company_name", company.name);
+    form.setValue("company_address", company.location || "");
+  }, [company]);
 
   const [newCategory, setNewCategory] = useState("");
   const [newCredential, setNewCredential] = useState("");
@@ -106,6 +136,8 @@ export default function PostJobPage() {
     toast("Job Posted Successfully!", {
       description: "Your job has been posted.",
     });
+
+    router.push("/employer/jobs");
   }
 
   function onError(errors: FieldErrors<JobPostingFormValues>) {
@@ -113,8 +145,6 @@ export default function PostJobPage() {
       description: "Please fill up the required field!",
     });
   }
-
-  console.log(form.formState.errors);
 
   function nextStep() {
     if (step < totalSteps) {
@@ -180,7 +210,7 @@ export default function PostJobPage() {
       setNewCredential("");
     }
   }
-
+  console.log(form.formState.errors);
   function removeCredential(
     qualificationIndex: number,
     credentialIndex: number
@@ -252,6 +282,7 @@ export default function PostJobPage() {
                           <Input
                             placeholder="Enter your company name"
                             {...field}
+                            disabled
                           />
                         </FormControl>
                         <FormDescription>
@@ -405,6 +436,107 @@ export default function PostJobPage() {
                       </p>
                     )}
                   </div>
+
+                  <FormField
+                    control={form.control}
+                    name="salaryRange"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Salary Range</FormLabel>
+                        <Select
+                          onValueChange={(value) => {
+                            field.onChange(value);
+                            if (value === "custom") {
+                              form.setValue("customMinSalary", "");
+                              form.setValue("customMaxSalary", "");
+                            }
+                          }}
+                          defaultValue={field.value}
+                        >
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select a salary range" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            <SelectItem value="30k-50k">
+                              ₱30,000 - ₱50,000
+                            </SelectItem>
+                            <SelectItem value="50k-70k">
+                              ₱50,000 - ₱70,000
+                            </SelectItem>
+                            <SelectItem value="70k-90k">
+                              ₱70,000 - ₱90,000
+                            </SelectItem>
+                            <SelectItem value="90k-110k">
+                              ₱90,000 - ₱110,000
+                            </SelectItem>
+                            <SelectItem value="110k-130k">
+                              ₱110,000 - ₱130,000
+                            </SelectItem>
+                            <SelectItem value="130k-150k">
+                              ₱130,000 - ₱150,000
+                            </SelectItem>
+                            <SelectItem value="150k+">₱150,000+</SelectItem>
+                            <SelectItem value="custom">Custom Range</SelectItem>
+                            <SelectItem value="competitive">
+                              Competitive
+                            </SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <FormDescription>
+                          The salary range for this position in Philippine Peso
+                          (₱).
+                        </FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  {form.watch("salaryRange") === "custom" && (
+                    <div className="grid grid-cols-2 gap-4">
+                      <FormField
+                        control={form.control}
+                        name="customMinSalary"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Minimum Salary (₱)</FormLabel>
+                            <FormControl>
+                              <Input
+                                type="number"
+                                placeholder="e.g. 25000"
+                                {...field}
+                                onChange={(e) => {
+                                  field.onChange(e.target.value);
+                                }}
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <FormField
+                        control={form.control}
+                        name="customMaxSalary"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Maximum Salary (₱)</FormLabel>
+                            <FormControl>
+                              <Input
+                                type="number"
+                                placeholder="e.g. 35000"
+                                {...field}
+                                onChange={(e) => {
+                                  field.onChange(e.target.value);
+                                }}
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+                  )}
                 </div>
               )}
 
@@ -455,27 +587,6 @@ export default function PostJobPage() {
                                 />
                               </FormControl>
                               <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-
-                        <FormField
-                          control={form.control}
-                          name={`qualifications.${qualificationIndex}.priority`}
-                          render={({ field }) => (
-                            <FormItem className="flex flex-row items-start space-x-3 space-y-0">
-                              <FormControl>
-                                <Checkbox
-                                  checked={field.value}
-                                  onCheckedChange={field.onChange}
-                                />
-                              </FormControl>
-                              <div className="space-y-1 leading-none">
-                                <FormLabel>Priority Requirement</FormLabel>
-                                <FormDescription>
-                                  Is this qualification absolutely necessary?
-                                </FormDescription>
-                              </div>
                             </FormItem>
                           )}
                         />

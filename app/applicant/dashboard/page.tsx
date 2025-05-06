@@ -15,80 +15,87 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Briefcase, FileText, User } from "lucide-react";
 import Link from "next/link";
 import { useSession } from "next-auth/react";
+import {
+  evaluateJobForApplicant,
+  fetchEvaluatedJobs,
+} from "@/lib/queries/jobs";
+import { toast } from "sonner";
+import { useQuery } from "@tanstack/react-query";
+import {
+  fetchUserApplication,
+  fetchUserApplicationForDashboard,
+} from "@/lib/queries/application";
+import { format, formatDate } from "date-fns";
+import { notFound } from "next/navigation";
 
 export default function ApplicantDashboard() {
   const session = useSession();
   // Mock data - would come from your API in a real implementation
-  console.log(session);
-  const recommendedJobs = [
-    {
-      id: 1,
-      title: "Senior Software Engineer",
-      company: "Tech Solutions Inc.",
-      location: "Remote",
-      matchScore: 92,
-      postedDate: "2 days ago",
-      salary: "$120,000 - $150,000",
-      skills: ["React", "Node.js", "TypeScript"],
-    },
-    {
-      id: 2,
-      title: "Full Stack Developer",
-      company: "Digital Innovations",
-      location: "New York, NY",
-      matchScore: 87,
-      postedDate: "1 week ago",
-      salary: "$100,000 - $130,000",
-      skills: ["JavaScript", "Python", "AWS"],
-    },
-    {
-      id: 3,
-      title: "Frontend Engineer",
-      company: "Creative Web Solutions",
-      location: "San Francisco, CA",
-      matchScore: 78,
-      postedDate: "3 days ago",
-      salary: "$110,000 - $140,000",
-      skills: ["React", "CSS", "UI/UX"],
-    },
-  ];
+  const { data: recommendedJobs } = useQuery({
+    queryKey: ["recommendedJobs"],
+    queryFn: async () => await fetchEvaluatedJobs(),
+  });
 
-  const applications = [
-    {
-      id: 101,
-      jobTitle: "Data Scientist",
-      company: "Data Analytics Co.",
-      appliedDate: "2023-04-01",
-      status: "Shortlisted",
-      interviewDate: "2023-04-15",
-    },
-    {
-      id: 102,
-      jobTitle: "Machine Learning Engineer",
-      company: "AI Innovations",
-      appliedDate: "2023-03-28",
-      status: "Under Review",
-      interviewDate: null,
-    },
-    {
-      id: 103,
-      jobTitle: "Backend Developer",
-      company: "Server Solutions",
-      appliedDate: "2023-03-15",
-      status: "Rejected",
-      interviewDate: null,
-    },
-  ];
+  const { data: applications } = useQuery({
+    queryKey: ["applicationDashboard"],
+    queryFn: async () => await fetchUserApplicationForDashboard(),
+  });
+
+  if (!applications && !recommendedJobs) {
+    return (
+      <>
+        <p>Loading...</p>
+      </>
+    );
+  }
+
+  console.log(applications);
+
+  function getAvgMatchScore() {
+    if (!recommendedJobs) return 0;
+    return recommendedJobs.length > 0
+      ? recommendedJobs.reduce((acc, num) => acc + num.matchScore, 0) /
+          recommendedJobs.length
+      : 0;
+  }
+
+  const handleEvaluate = async () => {
+    if (session.data?.user.role === "APPLICANT") {
+      if (session.data?.user.isVerified) {
+        try {
+          await evaluateJobForApplicant(session.data.user.id || "");
+          toast.success("Evaluation Success!");
+        } catch (error) {
+          toast.error("Evaluation Failed!");
+          console.log(error);
+        }
+      } else {
+        toast.error("Evaluation Failed!");
+      }
+    } else {
+      toast.error("Evaluation Failed!");
+    }
+  };
 
   return (
     <div className="container mx-auto py-4 px-2 sm:py-6 sm:px-4 bg-background">
       <div className="mb-4 sm:mb-6">
-        <h1 className="text-xl sm:text-2xl font-bold">Welcome back, John!</h1>
+        <h1 className="text-xl sm:text-2xl font-bold">
+          Welcome back, {session.data?.user.name}
+        </h1>
         <p className="text-sm sm:text-base text-muted-foreground">
           Here's what's happening with your job search
         </p>
+      </div>{" "}
+      <div className="flex justify-center mb-12">
+        <Button
+          size="lg"
+          className="rounded-full"
+          onClick={() => handleEvaluate()}
+        >
+          Evaluate Now
+        </Button>
       </div>
-
       <Tabs defaultValue="overview" className="space-y-4">
         <div className="overflow-x-auto">
           <TabsList className="w-full sm:w-auto">
@@ -108,7 +115,7 @@ export default function ApplicantDashboard() {
                 <Briefcase className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">85%</div>
+                <div className="text-2xl font-bold">{getAvgMatchScore()}%</div>
                 <p className="text-xs text-muted-foreground">
                   Average match score across all jobs
                 </p>
@@ -122,25 +129,11 @@ export default function ApplicantDashboard() {
                 <FileText className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">{applications.length}</div>
-                <p className="text-xs text-muted-foreground">
-                  Total applications submitted
-                </p>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">
-                  Interviews
-                </CardTitle>
-                <User className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
                 <div className="text-2xl font-bold">
-                  {applications.filter((app) => app.interviewDate).length}
+                  {applications?.length || 0}
                 </div>
                 <p className="text-xs text-muted-foreground">
-                  Scheduled interviews
+                  Total applications submitted
                 </p>
               </CardContent>
             </Card>
@@ -157,48 +150,50 @@ export default function ApplicantDashboard() {
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  {recommendedJobs.map((job) => (
-                    <div
-                      key={job.id}
-                      className="flex flex-col sm:flex-row sm:items-center space-y-2 sm:space-y-0 sm:space-x-4 rounded-md border p-3 sm:p-4"
-                    >
-                      <div className="flex-1 space-y-1">
-                        <p className="text-sm font-medium leading-none">
-                          {job.title}
-                        </p>
-                        <p className="text-sm text-muted-foreground">
-                          {job.company} • {job.location}
-                        </p>
-                        <div className="flex flex-wrap gap-1 mt-1">
-                          {job.skills.map((skill) => (
-                            <Badge
-                              key={skill}
-                              variant="outline"
-                              className="text-xs"
-                            >
-                              {skill}
-                            </Badge>
-                          ))}
+                  {recommendedJobs && recommendedJobs.length > 0
+                    ? recommendedJobs.map((job) => (
+                        <div
+                          key={job.id}
+                          className="flex flex-col sm:flex-row sm:items-center space-y-2 sm:space-y-0 sm:space-x-4 rounded-md border p-3 sm:p-4"
+                        >
+                          <div className="flex-1 space-y-1">
+                            <p className="text-sm font-medium leading-none">
+                              {job.title}
+                            </p>
+                            <p className="text-sm text-muted-foreground">
+                              {job.company} • {job.location}
+                            </p>
+                            <div className="flex flex-wrap gap-1 mt-1">
+                              {job.skills.map((skill) => (
+                                <Badge
+                                  key={skill}
+                                  variant="outline"
+                                  className="text-xs"
+                                >
+                                  {skill}
+                                </Badge>
+                              ))}
+                            </div>
+                          </div>
+                          <div className="flex flex-row sm:flex-col justify-between sm:items-end">
+                            <div className="flex items-center space-x-1">
+                              <span className="text-sm font-medium text-green-600">
+                                {job.matchScore}%
+                              </span>
+                              <Progress
+                                value={job.matchScore}
+                                className="w-16 h-2"
+                              />
+                            </div>
+                            <Link href={`/applicant/jobs/${job.id}`}>
+                              <Button size="sm" className="mt-2">
+                                View Job
+                              </Button>
+                            </Link>
+                          </div>
                         </div>
-                      </div>
-                      <div className="flex flex-row sm:flex-col justify-between sm:items-end">
-                        <div className="flex items-center space-x-1">
-                          <span className="text-sm font-medium text-green-600">
-                            {job.matchScore}%
-                          </span>
-                          <Progress
-                            value={job.matchScore}
-                            className="w-16 h-2"
-                          />
-                        </div>
-                        <Link href={`/applicant/jobs/${job.id}`}>
-                          <Button size="sm" className="mt-2">
-                            View Job
-                          </Button>
-                        </Link>
-                      </div>
-                    </div>
-                  ))}
+                      ))
+                    : null}
                 </div>
               </CardContent>
               <CardFooter>
@@ -219,42 +214,45 @@ export default function ApplicantDashboard() {
               <CardContent>
                 <ScrollArea className="h-64 sm:h-80 md:h-72 lg:h-80">
                   <div className="space-y-4">
-                    {applications.map((app) => (
-                      <div
-                        key={app.id}
-                        className="flex flex-col sm:flex-row sm:items-center space-y-2 sm:space-y-0 sm:space-x-4 rounded-md border p-3 sm:p-4"
-                      >
-                        <div className="flex-1 space-y-1">
-                          <p className="text-sm font-medium leading-none">
-                            {app.jobTitle}
-                          </p>
-                          <p className="text-sm text-muted-foreground">
-                            {app.company}
-                          </p>
-                          <p className="text-xs text-muted-foreground">
-                            Applied: {app.appliedDate}
-                          </p>
-                        </div>
-                        <div className="flex flex-row justify-between items-center sm:flex-col sm:items-end">
-                          <Badge
-                            variant={
-                              app.status === "Shortlisted"
-                                ? "default"
-                                : app.status === "Under Review"
-                                ? "secondary"
-                                : "destructive"
-                            }
+                    {applications && applications.length > 0
+                      ? applications.map((app) => (
+                          <div
+                            key={app.id}
+                            className="flex flex-col sm:flex-row sm:items-center space-y-2 sm:space-y-0 sm:space-x-4 rounded-md border p-3 sm:p-4"
                           >
-                            {app.status}
-                          </Badge>
-                          {app.interviewDate && (
-                            <p className="text-xs text-muted-foreground ml-2 sm:ml-0 sm:mt-1">
-                              Interview: {app.interviewDate}
-                            </p>
-                          )}
-                        </div>
-                      </div>
-                    ))}
+                            <div className="flex-1 space-y-1">
+                              <p className="text-sm font-medium leading-none">
+                                {app.jobTitle}
+                              </p>
+                              <p className="text-sm text-muted-foreground">
+                                {app.company}
+                              </p>
+                              <p className="text-xs text-muted-foreground">
+                                Applied:{" "}
+                                {format(app.appliedDate, "EEE, MMM d, yyyy")}
+                              </p>
+                            </div>
+                            <div className="flex flex-row justify-between items-center sm:flex-col sm:items-end">
+                              <Badge
+                                variant={
+                                  app.status === "SHORTLISTED"
+                                    ? "default"
+                                    : app.status === "REVIEW"
+                                    ? "secondary"
+                                    : "destructive"
+                                }
+                              >
+                                {app.status}
+                              </Badge>
+                              {app.interviewDate && (
+                                <p className="text-xs text-muted-foreground ml-2 sm:ml-0 sm:mt-1">
+                                  Interview: {app.interviewDate}
+                                </p>
+                              )}
+                            </div>
+                          </div>
+                        ))
+                      : null}
                   </div>
                 </ScrollArea>
               </CardContent>
@@ -280,7 +278,7 @@ export default function ApplicantDashboard() {
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                {recommendedJobs.map((job) => (
+                {recommendedJobs?.map((job) => (
                   <div
                     key={job.id}
                     className="flex flex-col space-y-2 rounded-md border p-3 sm:p-4"
@@ -340,7 +338,7 @@ export default function ApplicantDashboard() {
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                {applications.map((app) => (
+                {applications?.map((app) => (
                   <div
                     key={app.id}
                     className="flex flex-col space-y-2 rounded-md border p-3 sm:p-4"
@@ -354,9 +352,9 @@ export default function ApplicantDashboard() {
                       </div>
                       <Badge
                         variant={
-                          app.status === "Shortlisted"
+                          app.status === "SHORTLISTED"
                             ? "default"
-                            : app.status === "Under Review"
+                            : app.status === "REVIEW"
                             ? "secondary"
                             : "destructive"
                         }
@@ -368,7 +366,7 @@ export default function ApplicantDashboard() {
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm">
                       <div>
                         <p className="text-muted-foreground">Applied Date:</p>
-                        <p>{app.appliedDate}</p>
+                        <p>{format(app.appliedDate, "EEE, MMM d, yyyy")}</p>
                       </div>
                       <div>
                         <p className="text-muted-foreground">Interview Date:</p>
@@ -384,7 +382,7 @@ export default function ApplicantDashboard() {
                           View Application
                         </Button>
                       </Link>
-                      {app.status === "Shortlisted" && (
+                      {app.status === "SHORTLISTED" && (
                         <Link
                           href={`/applicant/applications/${app.id}/interview`}
                           className="w-full sm:w-auto"

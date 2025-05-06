@@ -30,13 +30,12 @@ import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 import { fetchUserRoleByEmail } from "@/lib/queries/user";
 
-// Define the login form schema
-export const LoginFormSchema = z.object({
+const LoginFormSchema = z.object({
   email: z.string().email({ message: "Please enter a valid email address" }),
   password: z.string().min(1, { message: "Password is required" }),
 });
 
-export type LoginFormValues = z.infer<typeof LoginFormSchema>;
+type LoginFormValues = z.infer<typeof LoginFormSchema>;
 
 export default function LoginPage() {
   const router = useRouter();

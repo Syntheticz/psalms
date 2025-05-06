@@ -27,8 +27,10 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import Link from "next/link";
-import { signOut } from "next-auth/react";
+import { signOut, useSession } from "next-auth/react";
 import { usePathname } from "next/navigation";
+import { useQuery } from "@tanstack/react-query";
+import { fetchUserInfo } from "@/lib/queries/user";
 
 export default function ApplicantLayout({
   children,
@@ -37,6 +39,13 @@ export default function ApplicantLayout({
 }) {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const pathname = usePathname();
+  const session = useSession();
+
+  const { data: user } = useQuery({
+    queryKey: ["UserInfo"],
+    queryFn: async () => await fetchUserInfo(session.data?.user.id || ""),
+    enabled: !!session.data?.user.id,
+  });
 
   const navigation = [
     { name: "Dashboard", href: "/applicant/dashboard", icon: Home },
@@ -62,7 +71,7 @@ export default function ApplicantLayout({
         <div className="flex-1 flex flex-col overflow-y-auto pt-5 pb-4">
           <nav className="flex-1 px-2 space-y-1">
             {navigation.map((item) => {
-              const isActive = location.pathname === item.href;
+              const isActive = pathname === item.href;
               return (
                 <Link
                   key={item.name}
@@ -187,16 +196,16 @@ export default function ApplicantLayout({
                 <span className="absolute top-0 right-0 block h-2 w-2 rounded-full bg-red-500"></span>
               </Button>
               <DropdownMenu>
-                <DropdownMenuTrigger>
-                  <Button variant="ghost" className="relative rounded-full">
+                <DropdownMenuTrigger asChild>
+                  <button className="relative rounded-full">
                     <Avatar>
                       <AvatarImage
                         src="/placeholder.svg?height=32&width=32"
                         alt="User"
                       />
-                      <AvatarFallback>JD</AvatarFallback>
+                      <AvatarFallback>{user?.name[0]}</AvatarFallback>
                     </Avatar>
-                  </Button>
+                  </button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent className="">
                   <DropdownMenuLabel>My Account</DropdownMenuLabel>

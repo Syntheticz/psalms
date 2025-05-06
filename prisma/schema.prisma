@@ -200,6 +200,7 @@ model Job {
   description         String
   job_title           String
   industry_field      String
+  salary_range        String
   priority_categories String[]
   isActive            Boolean  @default(true)
 

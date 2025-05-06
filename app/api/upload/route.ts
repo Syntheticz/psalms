@@ -1,6 +1,7 @@
 // app/api/upload/route.ts
 import { NextRequest, NextResponse } from "next/server";
-import { wasabiClient } from "@/lib/wasabi-client";
+import { s3Client } from "@/lib/s3-client"; // You need to create this
+
 import { PutObjectCommand } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { prisma } from "@/lib/prisma"; // Adjust path as needed
@@ -35,7 +36,7 @@ export async function POST(req: NextRequest) {
   const buffer = Buffer.from(arrayBuffer);
 
   const command = new PutObjectCommand({
-    Bucket: "resumefuzzyjobseeker",
+    Bucket: process.env.AWS_S3_BUCKET,
     Key: file.name,
     Body: buffer,
     ContentType: file.type,
@@ -43,13 +44,10 @@ export async function POST(req: NextRequest) {
 
   console.log(command);
 
-  console.log(wasabiClient);
+  console.log(s3Client);
 
-  const signedUrl = await getSignedUrl(wasabiClient, command, {
-    expiresIn: 60,
-  });
-
-  const publicUrl = `https://s3.ap-southeast-1.wasabisys.com/resumefuzzyjobseeker/${file.name}`;
+  await s3Client.send(command);
+  const publicUrl = `https://${process.env.AWS_S3_BUCKET}.s3.${process.env.AWS_REGION}.amazonaws.com/${file.name}`;
 
   // Save metadata in DB
   await prisma.fileAttatchment.create({
@@ -62,7 +60,7 @@ export async function POST(req: NextRequest) {
     },
   });
 
-  return Response.json({ signedUrl });
+  return Response.json({ url: publicUrl });
 }
 
 function getFileTypeEnum(mime: string): "IMAGE" | "PDF" | "DOCX" | "DOC" {

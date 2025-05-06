@@ -28,15 +28,21 @@ export async function GET(req: NextRequest) {
   const jobId = searchParams.get("jobId") as string;
   const applicantId = searchParams.get("applicantId") as string;
 
-  const applicant = await prisma.userInfo.findFirst({
+  const user = await prisma.user.findFirst({
     where: { id: applicantId },
     include: {
-      certificates: true,
-      education: true,
-      experience: true,
-      skills: true,
+      UserInfo: {
+        include: {
+          certificates: true,
+          education: true,
+          experience: true,
+          skills: true,
+        },
+      },
     },
   });
+
+  const applicant = user?.UserInfo;
 
   const job = await prisma.job.findFirst({
     where: { id: jobId },
@@ -57,6 +63,8 @@ export async function GET(req: NextRequest) {
     experience: applicant.experience.map((item) => item.description),
     skills: applicant.experience.map((item) => item.description),
   };
+
+  console.log(finalApplicant);
 
   const finaljob: JobRole = {
     id: job.id,

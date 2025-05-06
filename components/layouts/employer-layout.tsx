@@ -26,8 +26,10 @@ import {
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import Link from "next/link";
 import { ScrollArea } from "../ui/scroll-area";
-import { signOut } from "next-auth/react";
+import { signOut, useSession } from "next-auth/react";
 import { usePathname } from "next/navigation";
+import { useQuery } from "@tanstack/react-query";
+import { fetchUserCompany, fetchUserInfo } from "@/lib/queries/user";
 
 export default function EmployerLayout({
   children,
@@ -35,7 +37,14 @@ export default function EmployerLayout({
   children: React.ReactNode;
 }) {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const pathname = usePathname()
+  const session = useSession();
+
+  const pathname = usePathname();
+  const { data: user } = useQuery({
+    queryKey: ["UserInfo"],
+    queryFn: async () => await fetchUserCompany(),
+    enabled: !!session.data?.user.id,
+  });
 
   // Make sure all navigation links match the routes
   const navigation = [
@@ -84,12 +93,16 @@ export default function EmployerLayout({
           </nav>
         </div>
         <div className="p-4 border-t">
-          <Link href="/auth/login">
-            <Button variant="outline" className="w-full justify-start">
-              <LogOut className="mr-2 h-4 w-4" />
-              Log out
-            </Button>
-          </Link>
+          <Button
+            variant="outline"
+            className="w-full justify-start"
+            onClick={() => {
+              signOut();
+            }}
+          >
+            <LogOut className="mr-2 h-4 w-4" />
+            Log out
+          </Button>
         </div>
       </div>
 
@@ -108,7 +121,7 @@ export default function EmployerLayout({
           <div className="flex-1 flex flex-col overflow-y-auto pt-5 pb-4">
             <nav className="flex-1 px-2 space-y-1">
               {navigation.map((item) => {
-                const isActive = location.pathname === item.href;
+                const isActive = pathname === item.href;
                 return (
                   <Link
                     key={item.name}
@@ -132,12 +145,16 @@ export default function EmployerLayout({
             </nav>
           </div>
           <div className="p-4 border-t">
-   
-              <Button variant="outline" className="w-full justify-start" onClick={() => { signOut() }}>
-                <LogOut className="mr-2 h-4 w-4" />
-                Log out
-              </Button>
-        
+            <Button
+              variant="outline"
+              className="w-full justify-start"
+              onClick={() => {
+                signOut();
+              }}
+            >
+              <LogOut className="mr-2 h-4 w-4" />
+              Log out
+            </Button>
           </div>
         </SheetContent>
       </Sheet>
@@ -173,7 +190,6 @@ export default function EmployerLayout({
               </div> */}
             </div>
             <div className="ml-4 flex items-center md:ml-6 space-x-4 relative">
-            
               <Button variant="ghost" size="icon" className="relative ">
                 <Bell className="h-5 w-5" />
                 <span className="absolute top-0 right-0 block h-2 w-2 rounded-full bg-red-500"></span>
@@ -186,7 +202,7 @@ export default function EmployerLayout({
                         src="/placeholder.svg?height=32&width=32"
                         alt="User"
                       />
-                      <AvatarFallback>AC</AvatarFallback>
+                      <AvatarFallback>{user?.name[0]}</AvatarFallback>
                     </Avatar>
                   </Button>
                 </DropdownMenuTrigger>

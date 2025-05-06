@@ -19,72 +19,18 @@ import {
   MapPin,
 } from "lucide-react";
 import Link from "next/link";
+import { fetchUserApplicationForApplication } from "@/lib/queries/application";
+import { useQuery } from "@tanstack/react-query";
 
 export default function ApplicantApplications() {
   const [searchTerm, setSearchTerm] = useState("");
 
-  // Mock data - would come from your API in a real implementation
-  const applications = [
-    {
-      id: 101,
-      jobTitle: "Senior Software Engineer",
-      company: "Tech Solutions Inc.",
-      location: "Remote",
-      appliedDate: "2023-04-01",
-      status: "Shortlisted",
-      interviewDate: "2023-04-15",
-      feedback: "Great technical skills, moving to next round.",
-      nextSteps: "Technical interview scheduled.",
-    },
-    {
-      id: 102,
-      jobTitle: "Full Stack Developer",
-      company: "Digital Innovations",
-      location: "New York, NY",
-      appliedDate: "2023-03-28",
-      status: "Under Review",
-      interviewDate: null,
-      feedback: null,
-      nextSteps: "Application is being reviewed by the hiring team.",
-    },
-    {
-      id: 103,
-      jobTitle: "Frontend Engineer",
-      company: "Creative Web Solutions",
-      location: "San Francisco, CA",
-      appliedDate: "2023-03-15",
-      status: "Rejected",
-      interviewDate: null,
-      feedback:
-        "We found candidates with more experience in our specific tech stack.",
-      nextSteps: null,
-    },
-    {
-      id: 104,
-      jobTitle: "DevOps Engineer",
-      company: "Cloud Systems",
-      location: "Remote",
-      appliedDate: "2023-03-10",
-      status: "Interview Scheduled",
-      interviewDate: "2023-04-20",
-      feedback:
-        "Resume looks promising, would like to discuss your experience further.",
-      nextSteps: "Prepare for the technical interview.",
-    },
-    {
-      id: 105,
-      jobTitle: "Mobile Developer",
-      company: "App Creators",
-      location: "Austin, TX",
-      appliedDate: "2023-02-28",
-      status: "Offer Received",
-      interviewDate: "2023-03-15",
-      feedback: "Excellent cultural fit and technical skills.",
-      nextSteps: "Review offer letter and respond by April 10.",
-    },
-  ];
+  const { data: applications } = useQuery({
+    queryKey: ["applicationDashboard"],
+    queryFn: async () => await fetchUserApplicationForApplication(),
+  });
 
-  const filteredApplications = applications.filter(
+  const filteredApplications = applications?.filter(
     (app) =>
       app.jobTitle.toLowerCase().includes(searchTerm.toLowerCase()) ||
       app.company.toLowerCase().includes(searchTerm.toLowerCase())
@@ -142,10 +88,6 @@ export default function ApplicantApplications() {
             onChange={(e) => setSearchTerm(e.target.value)}
           />
         </div>
-        <Button variant="outline" className="sm:w-auto">
-          <Filter className="mr-2 h-4 w-4" />
-          Filters
-        </Button>
       </div>
 
       <Tabs defaultValue="all" className="space-y-4">
@@ -154,20 +96,11 @@ export default function ApplicantApplications() {
             <TabsTrigger value="all" className="text-xs sm:text-sm">
               All Applications
             </TabsTrigger>
-            <TabsTrigger value="active" className="text-xs sm:text-sm">
-              Active
-            </TabsTrigger>
-            <TabsTrigger value="interviews" className="text-xs sm:text-sm">
-              Interviews
-            </TabsTrigger>
-            <TabsTrigger value="offers" className="text-xs sm:text-sm">
-              Offers
-            </TabsTrigger>
           </TabsList>
         </div>
 
         <TabsContent value="all" className="space-y-4">
-          {filteredApplications.length === 0 ? (
+          {filteredApplications?.length === 0 ? (
             <Card>
               <CardContent className="flex flex-col items-center justify-center py-8 sm:py-10">
                 <Briefcase className="h-10 w-10 sm:h-12 sm:w-12 text-muted-foreground mb-3 sm:mb-4" />
@@ -181,7 +114,7 @@ export default function ApplicantApplications() {
               </CardContent>
             </Card>
           ) : (
-            filteredApplications.map((app) => (
+            filteredApplications?.map((app) => (
               <Card key={app.id}>
                 <CardContent className="p-0">
                   <div className="p-4 sm:p-6">
@@ -237,30 +170,6 @@ export default function ApplicantApplications() {
                         </div>
                       )}
                     </div>
-
-                    {(app.feedback || app.nextSteps) && (
-                      <div className="mt-3 sm:mt-4 p-2 sm:p-3 bg-muted rounded-md">
-                        {app.feedback && (
-                          <div className="mb-2">
-                            <p className="text-xs sm:text-sm font-medium">
-                              Feedback:
-                            </p>
-                            <p className="text-xs sm:text-sm">{app.feedback}</p>
-                          </div>
-                        )}
-
-                        {app.nextSteps && (
-                          <div>
-                            <p className="text-xs sm:text-sm font-medium">
-                              Next Steps:
-                            </p>
-                            <p className="text-xs sm:text-sm">
-                              {app.nextSteps}
-                            </p>
-                          </div>
-                        )}
-                      </div>
-                    )}
                   </div>
 
                   <div className="flex items-center justify-end bg-muted/50 p-3 sm:p-4 border-t">
