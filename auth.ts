@@ -98,8 +98,6 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     jwt: async ({ token, user, trigger, session }) => {
       if (trigger === "update") {
         token.isNewUser = session.isNewUser;
-
-        console.log(session.isNewUser);
         return token;
       }
 

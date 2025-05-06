@@ -50,7 +50,7 @@ export function TechnicalSkillsForm() {
             variant="ghost"
             size="icon"
             onClick={() => remove(index)}
-            disabled={fields.length === 1}
+            
             className="mb-2"
           >
             <Trash2 className="h-4 w-4" />
