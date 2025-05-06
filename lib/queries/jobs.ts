@@ -70,11 +70,11 @@ export async function createNewJobPosting(data: JobPostingFormValues) {
 }
 
 export async function fetchJobById(id: string) {
-  throw new Error("test");
   const data = await prisma.job.findFirst({
     where: { id },
     include: {
       qualifications: true,
+      metrics: true,
     },
   });
 
@@ -97,4 +97,21 @@ export async function fetchJobs() {
   });
 
   return data;
+}
+
+export async function fetchUserInfo(id: string) {
+  return prisma.userInfo.findFirst({
+    where: {
+      id,
+    },
+    include: {
+      certificates: true,
+      education: true,
+      experience: true,
+      hardSkills: true,
+      skills: true,
+      softSkills: true,
+      technicalSkills: true,
+    },
+  });
 }

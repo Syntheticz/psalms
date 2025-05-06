@@ -27,6 +27,7 @@ import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import Link from "next/link";
 import { ScrollArea } from "../ui/scroll-area";
 import { signOut } from "next-auth/react";
+import { usePathname } from "next/navigation";
 
 export default function EmployerLayout({
   children,
@@ -34,6 +35,7 @@ export default function EmployerLayout({
   children: React.ReactNode;
 }) {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const pathname = usePathname()
 
   // Make sure all navigation links match the routes
   const navigation = [
@@ -59,7 +61,7 @@ export default function EmployerLayout({
         <div className="flex-1 flex flex-col overflow-y-auto pt-5 pb-4">
           <nav className="flex-1 px-2 space-y-1">
             {navigation.map((item) => {
-              const isActive = location.pathname === item.href;
+              const isActive = pathname === item.href;
               return (
                 <Link
                   key={item.name}
@@ -130,12 +132,12 @@ export default function EmployerLayout({
             </nav>
           </div>
           <div className="p-4 border-t">
-            <Link href="/auth/login">
-              <Button variant="outline" className="w-full justify-start">
+   
+              <Button variant="outline" className="w-full justify-start" onClick={() => { signOut() }}>
                 <LogOut className="mr-2 h-4 w-4" />
                 Log out
               </Button>
-            </Link>
+        
           </div>
         </SheetContent>
       </Sheet>
@@ -171,12 +173,7 @@ export default function EmployerLayout({
               </div> */}
             </div>
             <div className="ml-4 flex items-center md:ml-6 space-x-4 relative">
-              <Link href="/employer/jobs/new">
-                <Button size="sm" className="hidden md:flex">
-                  <Plus className="mr-2 h-4 w-4" />
-                  Post a Job
-                </Button>
-              </Link>
+            
               <Button variant="ghost" size="icon" className="relative ">
                 <Bell className="h-5 w-5" />
                 <span className="absolute top-0 right-0 block h-2 w-2 rounded-full bg-red-500"></span>

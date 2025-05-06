@@ -18,6 +18,20 @@ type SignupFormValues = {
   companyName?: string | undefined;
 };
 
+export async function fetchUserData() {
+  const session = await auth();
+  if (!session) throw new Error("User is unauthenticated!");
+  const user = await prisma.user.findFirst({
+    where: {
+      email: session.user.email,
+    },
+  });
+
+  if (!user) throw new Error("User not found!");
+
+  return user;
+}
+
 export async function createUser(data: SignupFormValues) {
   const password = await bcrypt.hash(data.password, HASH_VALUE);
   const existingUser = await prisma.user.findUnique({
@@ -306,4 +320,33 @@ export async function fetchUserCompany() {
 
   if (!user) throw new Error("User is not found");
   return user.Company[0];
+}
+
+export async function fetchUserInfo(id: string) {
+  return prisma.userInfo.findFirst({
+    where: {
+      id,
+    },
+    include: {
+      certificates: true,
+      education: true,
+      experience: true,
+      hardSkills: true,
+      skills: true,
+      softSkills: true,
+      technicalSkills: true,
+      resume: true,
+    },
+  });
+}
+
+export async function updateVerification() {
+  const user = await fetchUserData();
+
+  await prisma.user.update({
+    where: { id: user.id },
+    data: {
+      isVerified: true,
+    },
+  });
 }

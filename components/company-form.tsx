@@ -159,7 +159,7 @@ export function CompanyForm() {
   const onSubmit = async (data: CompanyFormData) => {
     try {
       await saveEmployerProfile(data);
-      await update({ isNewUser: false });
+      await update({ isNewUser: false, isVerified: true });
       toast.success("Profile Updated!");
       await update();
 

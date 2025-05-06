@@ -18,7 +18,9 @@ export async function fetchUserRole(id: string) {
       email: true,
       role: true,
       userInfoId: true,
+      UserInfo: true,
       Company: true,
+      isVerified: true,
     },
   });
 
@@ -72,6 +74,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
                 name: dbUser.name || "",
                 email: dbUser.email || "",
                 isNewUser: dbUser.userInfoId ? false : true,
+                isVerified: dbUser.isVerified,
               };
             }
           }
@@ -104,22 +107,25 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         if (dbUser) {
           token.role = dbUser.user.role || "";
           token.id = dbUser.user.id || "";
+          token.isVerified = dbUser.user.isVerified;
           (token.email = dbUser.user.email || ""),
             (token.isNewUser =
               dbUser.user.role === "APPLICANT"
-                ? dbUser.user.userInfoId
+                ? dbUser.user.UserInfo
                   ? false
                   : true
                 : dbUser.user.Company.length !== 0
                 ? false
                 : true);
         }
+        console.log(token);
 
         return token;
       }
 
       if (trigger === "update") {
         token.isNewUser = session.isNewUser;
+        token.isVerified = session.isVerified;
       }
 
       return token;
@@ -131,6 +137,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         session.user.id = token.id;
         session.user.isNewUser = token.isNewUser;
         session.user.email = token.email;
+        session.user.isVerified = token.isVerified;
       }
       return session;
     },

@@ -30,6 +30,7 @@ model User {
   role          ROLE
   accounts      Account[]
   sessions      Session[]
+  isVerified    Boolean   @default(false)
 
   UserInfo    UserInfo?
   userInfoId  String?
@@ -52,13 +53,15 @@ model UserInfo {
   account           User?   @relation(fields: [userId], references: [id])
   userId            String? @unique
 
-  skills          Skill[] // 1-to-many
-  experience      Experience[] // 1-to-many
-  education       Education[] // 1-to-many
-  certificates    Certificate[] // 1-to-many
-  technicalSkills TechnicalSkill[] // 1-to-many
-  softSkills      SoftSkill[] // 1-to-many
-  hardSkills      HardSkill[] // 1-to-many
+  skills            Skill[] // 1-to-many
+  experience        Experience[] // 1-to-many
+  education         Education[] // 1-to-many
+  certificates      Certificate[] // 1-to-many
+  technicalSkills   TechnicalSkill[] // 1-to-many
+  softSkills        SoftSkill[] // 1-to-many
+  hardSkills        HardSkill[] // 1-to-many
+  resume            FileAttatchment? @relation(fields: [fileAttatchmentId], references: [id])
+  fileAttatchmentId String?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -72,12 +75,13 @@ enum FILETYPE {
 }
 
 model FileAttatchment {
-  id        String   @id @default(uuid())
+  id        String     @id @default(uuid())
   url       String
   type      String
   name      String
   size      Int
-  createdAt DateTime @default(now())
+  createdAt DateTime   @default(now())
+  UserInfo  UserInfo[]
 }
 
 model Skill {
@@ -212,6 +216,16 @@ model Job {
   metrics    metrics?
 }
 
+model metrics {
+  id           String @id @default(uuid())
+  job          Job    @relation(fields: [jobId], references: [id])
+  jobId        String @unique
+  views        Int    @default(0)
+  applications Int    @default(0)
+  saved        Int    @default(0)
+  qualified    Int    @default(0)
+}
+
 model Qualification {
   id                   String   @id @default(uuid())
   requirement          String
@@ -318,14 +332,4 @@ model SavedJobs {
   jobId  String
 
   createdAt DateTime @default(now())
-}
-
-model metrics {
-  id           String @id @default(uuid())
-  job          Job    @relation(fields: [jobId], references: [id])
-  jobId        String @unique
-  views        Int    @default(0)
-  applications Int    @default(0)
-  saved        Int    @default(0)
-  qualified    Int    @default(0)
 }

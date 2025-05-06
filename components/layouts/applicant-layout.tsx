@@ -28,6 +28,7 @@ import {
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import Link from "next/link";
 import { signOut } from "next-auth/react";
+import { usePathname } from "next/navigation";
 
 export default function ApplicantLayout({
   children,
@@ -35,6 +36,7 @@ export default function ApplicantLayout({
   children: React.ReactNode;
 }) {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const pathname = usePathname();
 
   const navigation = [
     { name: "Dashboard", href: "/applicant/dashboard", icon: Home },
@@ -111,7 +113,7 @@ export default function ApplicantLayout({
           <div className="flex-1 flex flex-col overflow-y-auto pt-5 pb-4">
             <nav className="flex-1 px-2 space-y-1">
               {navigation.map((item) => {
-                const isActive = location.pathname === item.href;
+                const isActive = pathname === item.href;
                 return (
                   <Link
                     key={item.name}
@@ -212,11 +214,9 @@ export default function ApplicantLayout({
                     </Link>
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem>
-                    <Link href="/auth/login" className="flex w-full">
-                      <LogOut className="mr-2 h-4 w-4" />
-                      Log out
-                    </Link>
+                  <DropdownMenuItem onClick={() => signOut()}>
+                    <LogOut className="mr-2 h-4 w-4" />
+                    Log out
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
