@@ -15,6 +15,10 @@ import {
   Archive,
   Trash2,
   Briefcase,
+  Eye,
+  Users,
+  BookmarkCheck,
+  CheckCircle,
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -25,80 +29,50 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import Link from "next/link";
+import { Badge } from "@/components/ui/badge";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import { JobWithRelation } from "@/lib/types/job";
+import { useQuery } from "@tanstack/react-query";
+import { fetchJobs } from "@/lib/queries/jobs";
 
 export default function EmployerJobs() {
   const [searchTerm, setSearchTerm] = useState("");
+  const [filterIndustry, setFilterIndustry] = useState<string | null>(null);
 
-  // Mock data - would come from your API in a real implementation
-  const jobs = [
-    {
-      id: 1,
-      title: "Senior Software Engineer",
-      department: "Engineering",
-      location: "Remote",
-      postedDate: "April 1, 2023",
-      applications: 42,
-      status: "Active",
-      topCandidates: 8,
-    },
-    {
-      id: 2,
-      title: "Product Manager",
-      department: "Product",
-      location: "New York, NY",
-      postedDate: "March 25, 2023",
-      applications: 28,
-      status: "Active",
-      topCandidates: 5,
-    },
-    {
-      id: 3,
-      title: "UX Designer",
-      department: "Design",
-      location: "San Francisco, CA",
-      postedDate: "March 20, 2023",
-      applications: 35,
-      status: "Active",
-      topCandidates: 7,
-    },
-    {
-      id: 4,
-      title: "Marketing Specialist",
-      department: "Marketing",
-      location: "Chicago, IL",
-      postedDate: "March 15, 2023",
-      applications: 19,
-      status: "Closed",
-      topCandidates: 3,
-    },
-    {
-      id: 5,
-      title: "Data Scientist",
-      department: "Data",
-      location: "Boston, MA",
-      postedDate: "March 10, 2023",
-      applications: 31,
-      status: "Active",
-      topCandidates: 6,
-    },
-    {
-      id: 6,
-      title: "Customer Success Manager",
-      department: "Customer Support",
-      location: "Austin, TX",
-      postedDate: "March 5, 2023",
-      applications: 24,
-      status: "Closed",
-      topCandidates: 4,
-    },
-  ];
+  const { data: jobs } = useQuery({
+    queryKey: ["jobs"],
+    queryFn: async () => await fetchJobs(),
+  });
 
-  const filteredJobs = jobs.filter(
-    (job) =>
-      job.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      job.department.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      job.location.toLowerCase().includes(searchTerm.toLowerCase())
+  // Get unique industry fields for filtering
+  const industries = Array.from(
+    new Set(jobs?.map((job) => job.industry_field))
   );
+
+  const filteredJobs = jobs?.filter((job) => {
+    const matchesSearch =
+      job.job_title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      job.company_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      job.company_address.toLowerCase().includes(searchTerm.toLowerCase());
+
+    const matchesIndustry =
+      !filterIndustry || job.industry_field === filterIndustry;
+
+    return matchesSearch && matchesIndustry;
+  });
+
+  const formatDate = (date: Date) => {
+    return new Intl.DateTimeFormat("en-US", {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+    }).format(date);
+  };
 
   return (
     <div className="container mx-auto py-6 px-4 bg-background">
@@ -127,10 +101,31 @@ export default function EmployerJobs() {
             onChange={(e) => setSearchTerm(e.target.value)}
           />
         </div>
-        <Button variant="outline" className="md:w-auto">
-          <Filter className="mr-2 h-4 w-4" />
-          Filters
-        </Button>
+        <DropdownMenu>
+          <DropdownMenuTrigger>
+            <Button variant="outline" className="md:w-auto">
+              <Filter className="mr-2 h-4 w-4" />
+              {filterIndustry
+                ? `Industry: ${filterIndustry}`
+                : "Filter by Industry"}
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-[200px]">
+            <DropdownMenuLabel>Select Industry</DropdownMenuLabel>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem onClick={() => setFilterIndustry(null)}>
+              All Industries
+            </DropdownMenuItem>
+            {industries.map((industry) => (
+              <DropdownMenuItem
+                key={industry}
+                onClick={() => setFilterIndustry(industry)}
+              >
+                {industry}
+              </DropdownMenuItem>
+            ))}
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
 
       <Tabs defaultValue="active" className="space-y-4">
@@ -140,8 +135,7 @@ export default function EmployerJobs() {
         </TabsList>
 
         <TabsContent value="active" className="space-y-4">
-          {filteredJobs.filter((job) => job.status === "Active").length ===
-          0 ? (
+          {filteredJobs?.filter((job) => job.isActive).length === 0 ? (
             <Card>
               <CardContent className="flex flex-col items-center justify-center py-10">
                 <Briefcase className="h-12 w-12 text-muted-foreground mb-4" />
@@ -161,87 +155,155 @@ export default function EmployerJobs() {
             <div className="rounded-md border">
               <div className="grid grid-cols-12 gap-4 p-4 text-sm font-medium border-b bg-muted/50">
                 <div className="col-span-4">Job Title</div>
-                <div className="col-span-2">Department</div>
+                <div className="col-span-2">Industry</div>
                 <div className="col-span-2">Posted Date</div>
-                <div className="col-span-1 text-center">Applications</div>
-                <div className="col-span-1 text-center">Top Matches</div>
-                <div className="col-span-2 text-right">Actions</div>
+                <div className="col-span-3 text-center">Metrics</div>
+                <div className="col-span-1 text-right">Actions</div>
               </div>
 
-              {filteredJobs
-                .filter((job) => job.status === "Active")
-                .map((job) => (
-                  <div
-                    key={job.id}
-                    className="grid grid-cols-12 gap-4 p-4 text-sm items-center hover:bg-muted/50 border-b last:border-0"
-                  >
-                    <div className="col-span-4">
-                      <div className="font-medium">{job.title}</div>
-                      <div className="text-xs text-muted-foreground">
-                        {job.location}
+              {filteredJobs &&
+                filteredJobs
+                  .filter((job) => job.isActive)
+                  .map((job) => (
+                    <div
+                      key={job.id}
+                      className="grid grid-cols-12 gap-4 p-4 text-sm items-center hover:bg-muted/50 border-b last:border-0"
+                    >
+                      <div className="col-span-4">
+                        <div className="font-medium">{job.job_title}</div>
+                        <div className="text-xs text-muted-foreground">
+                          {job.company_name} •{" "}
+                          {job.company_address.split(",")[0]}
+                        </div>
+                      </div>
+                      <div className="col-span-2">
+                        <Badge variant="outline">{job.industry_field}</Badge>
+                      </div>
+                      <div className="col-span-2">
+                        {formatDate(job.createdAt)}
+                      </div>
+                      <div className="col-span-3 flex justify-center gap-3">
+                        <TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <div className="flex items-center gap-1">
+                                <Eye className="h-4 w-4 text-muted-foreground" />
+                                <span>{job.metrics?.views}</span>
+                              </div>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              <p>Views</p>
+                            </TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
+
+                        <TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <div className="flex items-center gap-1">
+                                <Users className="h-4 w-4 text-muted-foreground" />
+                                <span>{job.metrics?.applications}</span>
+                              </div>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              <p>Applications</p>
+                            </TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
+
+                        <TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <div className="flex items-center gap-1">
+                                <BookmarkCheck className="h-4 w-4 text-muted-foreground" />
+                                <span>{job.metrics?.saved}</span>
+                              </div>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              <p>Saved</p>
+                            </TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
+
+                        <TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <div className="flex items-center gap-1">
+                                <CheckCircle className="h-4 w-4 text-muted-foreground" />
+                                <span>{job.metrics?.qualified}</span>
+                              </div>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              <p>Qualified Candidates</p>
+                            </TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
+                      </div>
+                      <div className="col-span-1 flex justify-end gap-2">
+                        <DropdownMenu>
+                          <DropdownMenuTrigger>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8"
+                            >
+                              <MoreHorizontal className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem>
+                              <Link
+                                href={`/employer/jobs/${job.id}`}
+                                className="flex w-full items-center"
+                              >
+                                <Eye className="mr-2 h-4 w-4" />
+                                View Details
+                              </Link>
+                            </DropdownMenuItem>
+                            <DropdownMenuItem>
+                              <Link
+                                href={`/employer/jobs/${job.id}/edit`}
+                                className="flex w-full items-center"
+                              >
+                                <Edit className="mr-2 h-4 w-4" />
+                                Edit
+                              </Link>
+                            </DropdownMenuItem>
+                            <DropdownMenuItem>
+                              <Link
+                                href={`/employer/jobs/${job.id}/applicants`}
+                                className="flex w-full items-center"
+                              >
+                                <Users className="mr-2 h-4 w-4" />
+                                View Applicants
+                              </Link>
+                            </DropdownMenuItem>
+                            <DropdownMenuItem>
+                              <Copy className="mr-2 h-4 w-4" />
+                              Duplicate
+                            </DropdownMenuItem>
+                            <DropdownMenuItem>
+                              <Archive className="mr-2 h-4 w-4" />
+                              Close Job
+                            </DropdownMenuItem>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem className="text-destructive">
+                              <Trash2 className="mr-2 h-4 w-4" />
+                              Delete
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
                       </div>
                     </div>
-                    <div className="col-span-2">{job.department}</div>
-                    <div className="col-span-2">{job.postedDate}</div>
-                    <div className="col-span-1 text-center">
-                      {job.applications}
-                    </div>
-                    <div className="col-span-1 text-center">
-                      {job.topCandidates}
-                    </div>
-                    <div className="col-span-2 flex justify-end gap-2">
-                      <Link href={`/employer/jobs/${job.id}`}>
-                        <Button variant="outline" size="sm">
-                          View
-                        </Button>
-                      </Link>
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-8 w-8"
-                          >
-                            <MoreHorizontal className="h-4 w-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                          <DropdownMenuSeparator />
-                          <DropdownMenuItem>
-                            <Link
-                              href={`/employer/jobs/${job.id}/edit`}
-                              className="flex w-full items-center"
-                            >
-                              <Edit className="mr-2 h-4 w-4" />
-                              Edit
-                            </Link>
-                          </DropdownMenuItem>
-                          <DropdownMenuItem>
-                            <Copy className="mr-2 h-4 w-4" />
-                            Duplicate
-                          </DropdownMenuItem>
-                          <DropdownMenuItem>
-                            <Archive className="mr-2 h-4 w-4" />
-                            Close Job
-                          </DropdownMenuItem>
-                          <DropdownMenuSeparator />
-                          <DropdownMenuItem className="text-destructive">
-                            <Trash2 className="mr-2 h-4 w-4" />
-                            Delete
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </div>
-                  </div>
-                ))}
+                  ))}
             </div>
           )}
         </TabsContent>
 
         <TabsContent value="closed" className="space-y-4">
-          {filteredJobs.filter((job) => job.status === "Closed").length ===
-          0 ? (
+          {filteredJobs?.filter((job) => !job.isActive).length === 0 ? (
             <Card>
               <CardContent className="flex flex-col items-center justify-center py-10">
                 <Archive className="h-12 w-12 text-muted-foreground mb-4" />
@@ -255,69 +317,126 @@ export default function EmployerJobs() {
             <div className="rounded-md border">
               <div className="grid grid-cols-12 gap-4 p-4 text-sm font-medium border-b bg-muted/50">
                 <div className="col-span-4">Job Title</div>
-                <div className="col-span-2">Department</div>
+                <div className="col-span-2">Industry</div>
                 <div className="col-span-2">Closed Date</div>
-                <div className="col-span-1 text-center">Applications</div>
-                <div className="col-span-1 text-center">Hired</div>
-                <div className="col-span-2 text-right">Actions</div>
+                <div className="col-span-3 text-center">Metrics</div>
+                <div className="col-span-1 text-right">Actions</div>
               </div>
 
-              {filteredJobs
-                .filter((job) => job.status === "Closed")
-                .map((job) => (
-                  <div
-                    key={job.id}
-                    className="grid grid-cols-12 gap-4 p-4 text-sm items-center hover:bg-muted/50 border-b last:border-0"
-                  >
-                    <div className="col-span-4">
-                      <div className="font-medium">{job.title}</div>
-                      <div className="text-xs text-muted-foreground">
-                        {job.location}
+              {filteredJobs &&
+                filteredJobs
+                  .filter((job) => !job.isActive)
+                  .map((job) => (
+                    <div
+                      key={job.id}
+                      className="grid grid-cols-12 gap-4 p-4 text-sm items-center hover:bg-muted/50 border-b last:border-0"
+                    >
+                      <div className="col-span-4">
+                        <div className="font-medium">{job.job_title}</div>
+                        <div className="text-xs text-muted-foreground">
+                          {job.company_name} •{" "}
+                          {job.company_address.split(",")[0]}
+                        </div>
+                      </div>
+                      <div className="col-span-2">
+                        <Badge variant="outline">{job.industry_field}</Badge>
+                      </div>
+                      <div className="col-span-2">
+                        {formatDate(job.updatedAt)}
+                      </div>
+                      <div className="col-span-3 flex justify-center gap-3">
+                        <TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <div className="flex items-center gap-1">
+                                <Eye className="h-4 w-4 text-muted-foreground" />
+                                <span>{job.metrics?.views}</span>
+                              </div>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              <p>Views</p>
+                            </TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
+
+                        <TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <div className="flex items-center gap-1">
+                                <Users className="h-4 w-4 text-muted-foreground" />
+                                <span>{job.metrics?.applications}</span>
+                              </div>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              <p>Applications</p>
+                            </TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
+
+                        <TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <div className="flex items-center gap-1">
+                                <CheckCircle className="h-4 w-4 text-muted-foreground" />
+                                <span>{job.metrics?.qualified}</span>
+                              </div>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              <p>Qualified Candidates</p>
+                            </TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
+                      </div>
+                      <div className="col-span-1 flex justify-end gap-2">
+                        <DropdownMenu>
+                          <DropdownMenuTrigger>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8"
+                            >
+                              <MoreHorizontal className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem>
+                              <Link
+                                href={`/employer/jobs/${job.id}`}
+                                className="flex w-full items-center"
+                              >
+                                <Eye className="mr-2 h-4 w-4" />
+                                View Details
+                              </Link>
+                            </DropdownMenuItem>
+                            <DropdownMenuItem>
+                              <Link
+                                href={`/employer/jobs/${job.id}/applicants`}
+                                className="flex w-full items-center"
+                              >
+                                <Users className="mr-2 h-4 w-4" />
+                                View Applicants
+                              </Link>
+                            </DropdownMenuItem>
+                            <DropdownMenuItem>
+                              <Copy className="mr-2 h-4 w-4" />
+                              Duplicate
+                            </DropdownMenuItem>
+                            <DropdownMenuItem>
+                              <Archive className="mr-2 h-4 w-4" />
+                              Reopen Job
+                            </DropdownMenuItem>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem className="text-destructive">
+                              <Trash2 className="mr-2 h-4 w-4" />
+                              Delete
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
                       </div>
                     </div>
-                    <div className="col-span-2">{job.department}</div>
-                    <div className="col-span-2">{job.postedDate}</div>
-                    <div className="col-span-1 text-center">
-                      {job.applications}
-                    </div>
-                    <div className="col-span-1 text-center">1</div>
-                    <div className="col-span-2 flex justify-end gap-2">
-                      <Link href={`/employer/jobs/${job.id}`}>
-                        <Button variant="outline" size="sm">
-                          View
-                        </Button>
-                      </Link>
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-8 w-8"
-                          >
-                            <MoreHorizontal className="h-4 w-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                          <DropdownMenuSeparator />
-                          <DropdownMenuItem>
-                            <Copy className="mr-2 h-4 w-4" />
-                            Duplicate
-                          </DropdownMenuItem>
-                          <DropdownMenuItem>
-                            <Archive className="mr-2 h-4 w-4" />
-                            Reopen Job
-                          </DropdownMenuItem>
-                          <DropdownMenuSeparator />
-                          <DropdownMenuItem className="text-destructive">
-                            <Trash2 className="mr-2 h-4 w-4" />
-                            Delete
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </div>
-                  </div>
-                ))}
+                  ))}
             </div>
           )}
         </TabsContent>

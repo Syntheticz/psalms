@@ -3,6 +3,7 @@ import "./globals.css";
 import { SessionProvider } from "next-auth/react";
 import { Toaster } from "@/components/ui/sonner";
 import { ThemeProvider } from "@/components/theme-provider";
+import ReactQueryProvider from "@/lib/providers/react-query-provider";
 
 export const metadata: Metadata = {
   title: "Jobseeker",
@@ -18,34 +19,16 @@ export default function RootLayout({
     <html lang="en">
       <body className={` antialiased`}>
         <SessionProvider>
-          {children}
-
-          <Toaster
-            richColors
-            toastOptions={{
-              // unstyled: true,
-              closeButton: true,
-
-              // classNames: {
-
-              //   toast:
-              //     "group pointer-events-auto relative flex w-full items-center justify-between space-x-4 overflow-hidden rounded-md border p-4 pr-6 shadow-lg transition-all data-[swipe=cancel]:translate-x-0 data-[swipe=end]:translate-x-[var(--radix-toast-swipe-end-x)] data-[swipe=move]:translate-x-[var(--radix-toast-swipe-move-x)] data-[swipe=move]:transition-none data-[state=open]:animate-in data-[state=closed]:animate-out data-[swipe=end]:animate-out data-[state=closed]:fade-out-80 data-[state=closed]:slide-out-to-right-full data-[state=open]:slide-in-from-top-full data-[state=open]:sm:slide-in-from-bottom-full bg-white",
-              //   title: "text-sm font-semibold",
-              //   description: "text-sm opacity-90",
-              //   error:
-              //     "border-red-200 bg-red-50 text-red-800 [&>svg]:text-red-500 flex items-center justify-start",
-              //   success:
-              //     "border-green-200 bg-green-50 text-green-800 [&>svg]:text-green-500 flex items-center justify-start",
-              //   warning:
-              //     "border-yellow-200 bg-yellow-50 text-yellow-800 [&>svg]:text-yellow-500 flex items-center justify-start",
-              //   info: "border-blue-200 bg-blue-50 text-blue-800 [&>svg]:text-blue-500 flex items-center justify-start",
-              //   actionButton:
-              //     "group-[.error]:bg-red-100 group-[.success]:bg-green-100 group-[.info]:bg-blue-100 group-[.warning]:bg-yellow-100 inline-flex h-8 shrink-0 items-center justify-center rounded-md border bg-transparent px-3 text-sm font-medium ring-offset-background transition-colors hover:bg-secondary focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none disabled:opacity-50",
-              //   cancelButton:
-              //     "group-[.error]:text-red-800 group-[.success]:text-green-800 group-[.info]:text-blue-800 group-[.warning]:text-yellow-800 absolute right-2 top-2 rounded-md p-1 text-foreground/50 opacity-70 transition-opacity hover:text-foreground focus:opacity-100 focus:outline-none focus:ring-2 group-hover:opacity-100",
-              // },
-            }}
-          />
+          <ReactQueryProvider>
+            {" "}
+            {children}
+            <Toaster
+              richColors
+              toastOptions={{
+                closeButton: true,
+              }}
+            />
+          </ReactQueryProvider>
         </SessionProvider>
       </body>
     </html>

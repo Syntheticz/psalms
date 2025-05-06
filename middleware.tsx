@@ -47,6 +47,15 @@ export default auth((req) => {
     }
   }
 
+  if (
+    !user?.isNewUser &&
+    !user?.isVerified &&
+    role === "APPLICANT" &&
+    pathname !== "/verification"
+  ) {
+    return Response.redirect(getNewURL("/verification"));
+  }
+
   if (!user?.isNewUser && pathname.startsWith("/new")) {
     if (user?.role === "EMPLOYER") {
       return Response.redirect(getNewURL("/employer/dashboard"));

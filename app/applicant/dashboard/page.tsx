@@ -19,6 +19,7 @@ import { useSession } from "next-auth/react";
 export default function ApplicantDashboard() {
   const session = useSession();
   // Mock data - would come from your API in a real implementation
+  console.log(session);
   const recommendedJobs = [
     {
       id: 1,
