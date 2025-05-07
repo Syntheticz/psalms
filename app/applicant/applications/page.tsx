@@ -24,6 +24,7 @@ import { useQuery } from "@tanstack/react-query";
 
 export default function ApplicantApplications() {
   const [searchTerm, setSearchTerm] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
 
   const { data: applications } = useQuery({
     queryKey: ["applicationDashboard"],

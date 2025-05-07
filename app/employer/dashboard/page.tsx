@@ -1,3 +1,4 @@
+"use client";
 import {
   Card,
   CardContent,
@@ -22,90 +23,24 @@ import {
   Search,
 } from "lucide-react";
 import Link from "next/link";
+import { fetchJobPostings, fetchTopCandidates } from "@/lib/queries/jobs";
+import { useQuery } from "@tanstack/react-query";
 
 export default function EmployerDashboard() {
-  // Mock data - would come from your API in a real implementation
-  const jobPostings = [
-    {
-      id: 1,
-      title: "Senior Software Engineer",
-      department: "Engineering",
-      location: "Remote",
-      postedDate: "April 1, 2023",
-      applications: 42,
-      status: "Active",
-      topCandidates: 8,
-    },
-    {
-      id: 2,
-      title: "Product Manager",
-      department: "Product",
-      location: "New York, NY",
-      postedDate: "March 25, 2023",
-      applications: 28,
-      status: "Active",
-      topCandidates: 5,
-    },
-    {
-      id: 3,
-      title: "UX Designer",
-      department: "Design",
-      location: "San Francisco, CA",
-      postedDate: "March 20, 2023",
-      applications: 35,
-      status: "Active",
-      topCandidates: 7,
-    },
-    {
-      id: 4,
-      title: "Marketing Specialist",
-      department: "Marketing",
-      location: "Chicago, IL",
-      postedDate: "March 15, 2023",
-      applications: 19,
-      status: "Closed",
-      topCandidates: 3,
-    },
-  ];
+  const { data: jobPostings } = useQuery({
+    queryKey: ["jobPostings"],
+    queryFn: async () => await fetchJobPostings(),
+  });
 
-  const topCandidates = [
-    {
-      id: 1,
-      name: "John Smith",
-      position: "Senior Software Engineer",
-      matchScore: 92,
-      status: "Shortlisted",
-    },
-    {
-      id: 2,
-      name: "Sarah Johnson",
-      position: "Senior Software Engineer",
-      matchScore: 87,
-      status: "Under Review",
-    },
-    {
-      id: 3,
-      name: "Michael Chen",
-      position: "Product Manager",
-      matchScore: 85,
-      status: "New",
-    },
-    {
-      id: 4,
-      name: "Emily Davis",
-      position: "UX Designer",
-      matchScore: 90,
-      status: "Shortlisted",
-    },
-    {
-      id: 5,
-      name: "David Wilson",
-      position: "UX Designer",
-      matchScore: 82,
-      status: "Under Review",
-    },
-  ];
+  const { data: topCandidates } = useQuery({
+    queryKey: ["topCandidates"],
+    queryFn: async () => await fetchTopCandidates(),
+  });
 
+  const averageMatchScore = topCandidates
+    ? topCandidates.reduce((sum, item) => sum + item.matchScore, 0) /
+        topCandidates.length || 0
+    : 0;
   return (
     <div className="container mx-auto py-6 px-4 bg-background">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
@@ -135,11 +70,8 @@ export default function EmployerDashboard() {
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold">
-                  {jobPostings.filter((job) => job.status === "Active").length}
+                  {jobPostings?.filter((job) => job.status === "Active").length}
                 </div>
-                <p className="text-xs text-muted-foreground">
-                  +1 from last month
-                </p>
               </CardContent>
             </Card>
             <Card>
@@ -151,14 +83,11 @@ export default function EmployerDashboard() {
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold">
-                  {jobPostings.reduce(
+                  {jobPostings?.reduce(
                     (total, job) => total + job.applications,
                     0
                   )}
                 </div>
-                <p className="text-xs text-muted-foreground">
-                  +24 from last week
-                </p>
               </CardContent>
             </Card>
             <Card>
@@ -170,14 +99,11 @@ export default function EmployerDashboard() {
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold">
-                  {jobPostings.reduce(
+                  {jobPostings?.reduce(
                     (total, job) => total + job.topCandidates,
                     0
                   )}
                 </div>
-                <p className="text-xs text-muted-foreground">
-                  +5 from last week
-                </p>
               </CardContent>
             </Card>
             <Card>
@@ -188,8 +114,8 @@ export default function EmployerDashboard() {
                 <Settings className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">87%</div>
-                <Progress value={87} className="h-2" />
+                <div className="text-2xl font-bold">{averageMatchScore}%</div>
+                <Progress value={averageMatchScore} className="h-2" />
               </CardContent>
             </Card>
           </div>
@@ -204,7 +130,7 @@ export default function EmployerDashboard() {
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  {jobPostings.map((job) => (
+                  {jobPostings?.map((job) => (
                     <div
                       key={job.id}
                       className="flex items-center space-x-4 rounded-md border p-4"
@@ -269,7 +195,7 @@ export default function EmployerDashboard() {
               <CardContent>
                 <ScrollArea className="h-[300px]">
                   <div className="space-y-4">
-                    {topCandidates.map((candidate) => (
+                    {topCandidates?.map((candidate) => (
                       <div
                         key={candidate.id}
                         className="flex items-center space-x-4 rounded-md border p-4"
@@ -299,9 +225,9 @@ export default function EmployerDashboard() {
                           <div>
                             <Badge
                               variant={
-                                candidate.status === "Shortlisted"
+                                candidate.status === "SHORTLISTED"
                                   ? "default"
-                                  : candidate.status === "Under Review"
+                                  : candidate.status === "REVIEW"
                                   ? "secondary"
                                   : "outline"
                               }
@@ -369,7 +295,7 @@ export default function EmployerDashboard() {
                   <div className="col-span-2 text-right">Actions</div>
                 </div>
 
-                {jobPostings.map((job) => (
+                {jobPostings?.map((job) => (
                   <div
                     key={job.id}
                     className="grid grid-cols-12 gap-4 p-4 text-sm items-center hover:bg-muted/50"
@@ -435,7 +361,7 @@ export default function EmployerDashboard() {
               </div>
 
               <div className="space-y-4">
-                {topCandidates.map((candidate) => (
+                {topCandidates?.map((candidate) => (
                   <div
                     key={candidate.id}
                     className="flex items-center space-x-4 rounded-md border p-4"
@@ -455,9 +381,9 @@ export default function EmployerDashboard() {
                         <p className="font-medium truncate">{candidate.name}</p>
                         <Badge
                           variant={
-                            candidate.status === "Shortlisted"
+                            candidate.status === "SHORTLISTED"
                               ? "default"
-                              : candidate.status === "Under Review"
+                              : candidate.status === "REVIEW"
                               ? "secondary"
                               : "outline"
                           }
@@ -484,13 +410,13 @@ export default function EmployerDashboard() {
                 ))}
               </div>
             </CardContent>
-            <CardFooter>
+            {/* <CardFooter>
               <Link href="/employer/candidates" className="w-full">
                 <Button variant="outline" className="w-full">
                   View All Candidates
                 </Button>
               </Link>
-            </CardFooter>
+            </CardFooter> */}
           </Card>
         </TabsContent>
       </Tabs>

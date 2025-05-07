@@ -4,7 +4,7 @@ import { JobPostingFormValues } from "@/app/employer/jobs/new/page";
 import { prisma } from "../prisma";
 import { auth } from "@/auth";
 import { JobWithRelation } from "../types/job";
-import { formatDistanceToNow } from "date-fns";
+import { format, formatDistanceToNow } from "date-fns";
 import { fetchUserData } from "./user";
 
 export async function createNewJobPosting(data: JobPostingFormValues) {
@@ -112,6 +112,30 @@ export async function fetchUserInfo(id: string) {
   });
 }
 
+export async function fetchJobPostings() {
+  const user = await fetchUserData();
+
+  const data = await prisma.job.findMany({
+    where: {
+      userId: user.id,
+    },
+    include: {
+      applicants: true,
+    },
+  });
+
+  return data.map((item) => ({
+    id: item.id,
+    title: item.job_title,
+    department: item.industry_field,
+    location: item.company_address,
+    postedDate: format(item.createdAt, "EEE, MMM d, yyyy"),
+    applications: item.applicants.length,
+    status: "Active",
+    topCandidates: item.applicants.length,
+  }));
+}
+
 export async function evaluateJobForApplicant(applicantId: string) {
   const rawJobs = await prisma.job.findMany({
     select: { id: true },
@@ -211,4 +235,38 @@ export async function fetchJobForApplicant(id: string) {
     })),
     metrics: data.job.metrics,
   };
+}
+
+export async function fetchTopCandidates() {
+  const user = await fetchUserData();
+
+  const data = await prisma.jobScore.findMany({
+    where: {
+      job: { userId: user.id },
+    },
+    include: {
+      job: {
+        include: {
+          applicants: {
+            include: {
+              user: true,
+            },
+          },
+        },
+      },
+    },
+  });
+
+  return data
+    .map((item) =>
+      item.job.applicants.map((app) => ({
+        id: app.id,
+        name: app.user.name || "",
+        position: item.job.job_title,
+        matchScore: item.score,
+        status: app.status,
+      }))
+    )
+    .flat()
+    .sort((a, b) => b.matchScore - a.matchScore);
 }

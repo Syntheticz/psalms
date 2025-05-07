@@ -50,7 +50,7 @@ export default function EmployerLayout({
   const navigation = [
     { name: "Dashboard", href: "/employer/dashboard", icon: Home },
     { name: "Job Postings", href: "/employer/jobs", icon: Briefcase },
-    { name: "Analytics", href: "/employer/analytics", icon: PieChart },
+    // { name: "Analytics", href: "/employer/analytics", icon: PieChart },
     { name: "Company Profile", href: "/employer/profile", icon: Building },
   ];
 
@@ -195,8 +195,8 @@ export default function EmployerLayout({
                 <span className="absolute top-0 right-0 block h-2 w-2 rounded-full bg-red-500"></span>
               </Button>
               <DropdownMenu>
-                <DropdownMenuTrigger>
-                  <Button variant="ghost" className="relative rounded-full">
+                <DropdownMenuTrigger asChild>
+                  <button className="relative rounded-full">
                     <Avatar>
                       <AvatarImage
                         src="/placeholder.svg?height=32&width=32"
@@ -204,7 +204,7 @@ export default function EmployerLayout({
                       />
                       <AvatarFallback>{user?.name[0]}</AvatarFallback>
                     </Avatar>
-                  </Button>
+                  </button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent className="">
                   <DropdownMenuLabel>My Account</DropdownMenuLabel>

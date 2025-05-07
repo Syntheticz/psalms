@@ -27,9 +27,12 @@ import {
 } from "@/lib/queries/application";
 import { format, formatDate } from "date-fns";
 import { notFound } from "next/navigation";
+import { useState } from "react";
 
 export default function ApplicantDashboard() {
   const session = useSession();
+  const [isLoading, setIsLoading] = useState(false);
+
   // Mock data - would come from your API in a real implementation
   const { data: recommendedJobs } = useQuery({
     queryKey: ["recommendedJobs"],
@@ -49,8 +52,6 @@ export default function ApplicantDashboard() {
     );
   }
 
-  console.log(applications);
-
   function getAvgMatchScore() {
     if (!recommendedJobs) return 0;
     return recommendedJobs.length > 0
@@ -63,17 +64,22 @@ export default function ApplicantDashboard() {
     if (session.data?.user.role === "APPLICANT") {
       if (session.data?.user.isVerified) {
         try {
+          setIsLoading(true);
           await evaluateJobForApplicant(session.data.user.id || "");
           toast.success("Evaluation Success!");
+          setIsLoading(false);
         } catch (error) {
           toast.error("Evaluation Failed!");
           console.log(error);
+          setIsLoading(false);
         }
       } else {
         toast.error("Evaluation Failed!");
+        setIsLoading(false);
       }
     } else {
       toast.error("Evaluation Failed!");
+      setIsLoading(false);
     }
   };
 
@@ -92,8 +98,9 @@ export default function ApplicantDashboard() {
           size="lg"
           className="rounded-full"
           onClick={() => handleEvaluate()}
+          disabled={isLoading}
         >
-          Evaluate Now
+          {isLoading ? "Evaluating..." : "Evaluate Now"}
         </Button>
       </div>
       <Tabs defaultValue="overview" className="space-y-4">

@@ -12,7 +12,7 @@ import {
   Upload,
 } from "lucide-react";
 // import type { UserData } from "@/lib/types"
-// import { useDocuments } from "@/lib/api/queries"
+// import { useattatchments } from "@/lib/api/queries"
 import { Skeleton } from "@/components/ui/skeleton";
 import { UserInfo } from "@prisma/client";
 import { useQuery } from "@tanstack/react-query";
@@ -26,8 +26,8 @@ interface ProfileSidebarProps {
 
 export function ProfileSidebar({ user, isEditing }: ProfileSidebarProps) {
   const session = useSession();
-  const { data: document, isLoading: isLoadingDocuments } = useQuery({
-    queryKey: ["document", session.data?.user.id || ""],
+  const { data: attatchment, isLoading: isLoadingattatchments } = useQuery({
+    queryKey: ["attatchment", session.data?.user.id || ""],
     queryFn: async () => {
       const record = await fetchUserInfo(session.data?.user.id || "");
 
@@ -101,17 +101,17 @@ export function ProfileSidebar({ user, isEditing }: ProfileSidebarProps) {
 
       <Card>
         <CardHeader>
-          <CardTitle>Documents</CardTitle>
+          <CardTitle>attatchments</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          {isLoadingDocuments ? (
+          {isLoadingattatchments ? (
             <div className="space-y-3">
               <Skeleton className="h-16 w-full" />
               <Skeleton className="h-16 w-full" />
             </div>
-          ) : document ? (
+          ) : attatchment ? (
             <div
-              key={document.id}
+              key={attatchment.id}
               className="flex justify-between items-center p-3 border rounded-md"
             >
               <div className="flex items-center">
@@ -120,21 +120,33 @@ export function ProfileSidebar({ user, isEditing }: ProfileSidebarProps) {
                 </div>
                 <div>
                   <p className="font-medium truncate text-ellipsis overflow-hidden w-36">
-                    {document.name}
+                    {attatchment.name}
                   </p>
                   <p className="text-xs text-muted-foreground">
                     Uploaded on{" "}
-                    {new Date(document.createdAt).toLocaleDateString()}
+                    {new Date(attatchment.createdAt).toLocaleDateString()}
                   </p>
                 </div>
               </div>
-              <Button variant="ghost" size="sm">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => {
+                  const link = document.createElement("a");
+                  link.href = attatchment.url;
+                  link.download = attatchment.name || "download";
+                  link.target = "_blank"; // Optional: open in new tab
+                  document.body.appendChild(link);
+                  link.click();
+                  document.body.removeChild(link);
+                }}
+              >
                 <Download className="h-4 w-4" />
               </Button>
             </div>
           ) : (
             <p className="text-sm text-muted-foreground text-center py-2">
-              No documents uploaded yet
+              No attatchments uploaded yet
             </p>
           )}
         </CardContent>

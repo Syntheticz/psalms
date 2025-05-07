@@ -1,4 +1,5 @@
 import EmployerLayout from "@/components/layouts/employer-layout";
+import ReactQueryProvider from "@/lib/providers/react-query-provider";
 import React from "react";
 
 export default function Layout({
@@ -6,5 +7,9 @@ export default function Layout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  return <EmployerLayout>{children}</EmployerLayout>;
+  return (
+    <EmployerLayout>
+      <ReactQueryProvider>{children}</ReactQueryProvider>
+    </EmployerLayout>
+  );
 }
